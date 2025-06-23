@@ -7,6 +7,18 @@ from pathlib import Path
 
 base_dir = Path(__file__).parent
 MATS = pd.read_csv(base_dir / "data" / "materials.csv")
+mat_ids = MATS["Material-ID"].tolist()
+
+with st.sidebar:
+    st.subheader("Material")
+    sel_mat = st.selectbox("Choose material", mat_ids, index=mat_ids.index("AL6061"))
+    mat_row = MATS[MATS["Material-ID"] == sel_mat].iloc[0]
+
+# bu satırlar Kc ve yoğunluk değişkenlerini ayarlıyor
+rho_default = float(mat_row["rho_kg_mm3"])
+Kc_default  = float(mat_row["Kc_N_mm2"])
+
+# önceki sabit değer kullandığınız yerlerde artık rho_default ve Kc_default kullanın
 
 
 
