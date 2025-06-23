@@ -2,3 +2,13 @@
 pandas
 altair
 fpdf2
+
+
+
+
+Commit changes
+[  Buraya tek satırlık mesaj  ]   ←  üstteki tek satırlık kutu
+[                               ]   ←  alttaki isteğe bağlı açıklama alanı
+(o) Commit directly to the main branch
+( ) Create a new branch for this commit
+[ ✓ ] Commit changes           ←  yeşil düğme
