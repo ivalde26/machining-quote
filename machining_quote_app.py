@@ -73,21 +73,29 @@ V_chip  = max(V_raw - V_final, 0)
 # --------------------------------------------------------
 # 4) DEFAULT OPERATIONS TABLE
 # --------------------------------------------------------
-def default_operations() -> pd.DataFrame:
+def default_operations():
     return pd.DataFrame({
         "Operation":      ["Rough 3X", "Semi-rough 5X", "Finish"],
         "Tool Ø (mm)":    [12, 8, 6],
-        "Teeth":          [3,  2, 2],
+        "Teeth":          [3, 2, 2],
         "RPM":            [12000, 16000, 18000],
         "f_z (mm)":       [0.06, 0.04, 0.03],
-        "Feed (mm/min)":  [0, 0, 0],        # manual option
+        "Feed (mm/min)":  [0, 0, 0],     # manuel feed seçeneği
         "a_p (mm)":       [8, 6, 0.5],
-        "a_e (mm)":       [4, 2, 0.2],
+        "a_e (mm)":       [4, 2, 0.2],   # mm girişi
+        "ae % (of Ø)":    [50, 50, 10],  # YENİ ‒ yüzde girişi
         "Volume Share":   [0.70, 0.25, 0.05],
     })
 
+
 if "op_df" not in st.session_state:
     st.session_state.op_df = default_operations()
+# aₑ için giriş modu
+ae_mode = st.radio(
+    "aₑ input mode",
+    ["Use % of tool Ø", "Manual aₑ (mm)"],
+    horizontal=True,
+)
 
 st.subheader("Operation Parameters")
 
@@ -108,17 +116,30 @@ st.session_state.op_df = op_df_edit
 # --------------------------------------------------------
 op_results = []
 for _, row in op_df_edit.iterrows():
+    # feed (otomatik vs manuel)
     feed = (row["Teeth"] * row["RPM"] * row["f_z (mm)"]
             if feed_mode.startswith("Calculate") else row["Feed (mm/min)"])
-    mrr        = feed * row["a_p (mm)"] * row["a_e (mm)"]       # mm³/min
-    chip_vol   = V_chip * row["Volume Share"]
-    time_min   = chip_vol / mrr / 60 if mrr else 0
+
+    # aₑ (takım Ø’nin %-si vs manuel mm)
+    ae = (row["Tool Ø (mm)"] * row["ae % (of Ø)"] / 100
+          if ae_mode.startswith("Use %") else row["a_e (mm)"])
+
+    # MRR ve süre
+    mrr      = feed * row["a_p (mm)"] * ae            # mm³/min
+    chip_vol = V_chip * row["Volume Share"]
+    time_min = chip_vol / mrr / 60 if mrr else 0
+
+    # sonuç listesi
     op_results.append({
-        "Operation":        row["Operation"],
-        "Feed (mm/min)":    feed,
-        "MRR (mm³/min)":    mrr,
+        "Operation":         row["Operation"],
+        "Feed (mm/min)":     feed,
+        "aₑ (mm)":           ae,
+        "MRR (mm³/min)":     mrr,
         "Chip Volume (mm³)": chip_vol,
-        "Time (min)":       time_min,
+        "Time (min)":        time_min,
+    })
+
+
     })
 
 op_df = pd.DataFrame(op_results)
