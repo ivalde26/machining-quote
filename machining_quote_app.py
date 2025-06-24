@@ -152,8 +152,8 @@ cost_df = pd.DataFrame(
 # ------------------------------------------------------------------
 st.subheader("📏 Block & Volume")
 
-st.write(f"**Raw block volume:** `{V_raw:,.0f} mm³`")
 st.write(f"**Raw material weight:** `{raw_mass:.2f} kg`")
+st.write(f"**Raw block volume:** `{V_raw:,.0f} mm³`")
 
 chip_text = (
     f"**Chip volume to remove:** `{V_chip:,.0f} mm³`"
