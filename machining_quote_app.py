@@ -223,15 +223,7 @@ def add_table(self, dataframe: pd.DataFrame, title: str):
                 f"{item:,.3f}" if isinstance(item, (int, float)) else normalize(item)
             )
             self.cell(col_width, 6, text, border=1, align="C")
-# ✨ Blok & Hacim Bilgileri (ekrana yazdır)
-# ------------------------------------------------------------------
-st.subheader("📏 Block & Volume")
 
-st.write(f"**Raw block volume:** `{V_raw:,.0f} mm³`")
-st.write(f"**Raw material weight:** `{raw_mass:.2f} kg`")
-
-chip_txt = f"**Chip volume to remove:** `{V_chip:,.0f} mm³`"
-st.write(chip_txt if V_chip > 0 else "Chip volume: 0 (mm³)")
 
     }
     pdf_bytes = build_pdf(block_info, op_df, cost_df)
