@@ -106,9 +106,13 @@ feed_mode = st.radio(
 )
 
 op_df_edit = st.data_editor(
-    st.session_state.op_df, num_rows="dynamic",
-    use_container_width=True, key="ops_editor"
+    st.session_state.op_df,
+    num_rows="dynamic",
+    use_container_width=True,
+    key="ops_editor",
+    on_change=st.experimental_rerun,      # ← tek satırda eklenen parametre
 )
+
 st.session_state.op_df = op_df_edit
 
 # --------------------------------------------------------
