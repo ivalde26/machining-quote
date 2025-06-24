@@ -3,32 +3,157 @@ import pandas as pd
 import altair as alt
 from io import BytesIO
 from fpdf import FPDF
-from pathlib import Path 
+from pathlib import Path
 
+# ————————————————————————————————————
+# 0) Dosya & malzeme verisi
+# ————————————————————————————————————
 base_dir = Path(__file__).parent
 MATS = pd.read_csv(base_dir / "data" / "materials.csv")
 mat_ids = MATS["Material-ID"].tolist()
 
+# ————————————————————————————————————
+# 1) Yan menü – malzeme ve blok girişleri
+# ————————————————————————————————————
+st.set_page_config(page_title="🛠️ Machining Quote Calculator", layout="wide")
 with st.sidebar:
     st.subheader("Material")
     sel_mat = st.selectbox("Choose material", mat_ids, index=mat_ids.index("AL6061"))
     mat_row = MATS[MATS["Material-ID"] == sel_mat].iloc[0]
+    rho_default = float(mat_row["rho_kg_mm3"])      # kg / mm³
+    Kc_default  = float(mat_row["Kc_N_mm2"])        # şimdilik dokunmuyoruz
 
-# bu satırlar Kc ve yoğunluk değişkenlerini ayarlıyor
-rho_default = float(mat_row["rho_kg_mm3"])
-Kc_default  = float(mat_row["Kc_N_mm2"])
+    st.header("Raw Block Dimensions (mm)")
+    L = st.number_input("Length (X)",  value=200, min_value=1)
+    W = st.number_input("Width  (Y)",  value=150, min_value=1)
+    H = st.number_input("Height (Z)",  value=40,  min_value=1)
 
-# önceki sabit değer kullandığınız yerlerde artık rho_default ve Kc_default kullanın
+    st.divider()
+    st.header("Final Part & Costs")
+    V_final      = st.number_input("Final part volume (mm³)", value=680_000)
+    machine_rate = st.number_input("Machine rate ($/hr)",      value=75.0)
+    tool_cost    = st.number_input("Tool wear cost per part ($)", value=8.0)
+    mat_density  = st.number_input("Material density (kg/mm³)", value=rho_default, format="%e")
+    mat_price    = st.number_input("Material cost ($/kg)",     value=5.0)
+    overhead_pct = st.number_input("Overhead (%)",             value=15.0)
 
+# ————————————————————————————————————
+# 2) Sayfa başlığı
+# ————————————————————————————————————
+st.markdown("<h1 style='text-align:center;'>🛠️ Machining Quote Calculator</h1>", unsafe_allow_html=True)
 
+# ————————————————————————————————————
+# 3) Blok / hacim hesapları
+# ————————————————————————————————————
+V_raw  = L * W * H                           # mm³
+V_chip = max(V_raw - V_final, 0)             # mm³
 
-st.set_page_config(page_title="🛠️ Machining Quote Calculator", layout="wide")
+# ————————————————————————————————————
+# 4) Varsayılan operasyon tablosu
+# ————————————————————————————————————
+def default_operations():
+    return pd.DataFrame(
+        {
+            "Operation":      ["Rough 3X", "Semi-rough 5X", "Finish"],
+            "Tool Ø (mm)":    [12, 8, 6],
+            "Teeth":          [3,  2, 2],
+            "RPM":            [12000, 16000, 18000],
+            "f_z (mm)":       [0.06, 0.04, 0.03],
+            "Feed (mm/min)":  [0, 0, 0],            # manuel değer için
+            "a_p (mm)":       [8, 6, 0.5],
+            "a_e (mm)":       [4, 2, 0.2],
+            "Volume Share":   [0.70, 0.25, 0.05],
+        }
+    )
 
-st.title("🛠️ Machining Quote Calculator")
+if "op_df" not in st.session_state:
+    st.session_state.op_df = default_operations()
 
-# -----------------------------------------------------
-# Helper to create a PDF summary
-# -----------------------------------------------------
+# ————————————————————————————————————
+# 5) Kullanıcıya seçenek: otomatik mi manuel mi?
+# ————————————————————————————————————
+st.subheader("Operation Parameters")
+
+feed_mode = st.radio(
+    "Feedrate giriş türü",
+    ["Hesapla (RPM × f_z × teeth)", "Manuel (tabloda Feed gir)"],
+    horizontal=True,
+)
+
+edited_df = st.data_editor(
+    st.session_state.op_df,
+    num_rows="dynamic",
+    use_container_width=True,
+    key="ops_editor",
+)
+st.session_state.op_df = edited_df
+
+# ————————————————————————————————————
+# 6) Her işlem için hesaplamalar
+# ————————————————————————————————————
+op_results = []
+for _, row in edited_df.iterrows():
+    # Feed belirleme
+    if feed_mode.startswith("Hesapla"):
+        feed = row["Teeth"] * row["RPM"] * row["f_z (mm)"]
+    else:
+        feed = row["Feed (mm/min)"]
+
+    mrr       = feed * row["a_p (mm)"] * row["a_e (mm)"]          # mm³ / min
+    chip_vol  = V_chip * row["Volume Share"]
+    time_min  = chip_vol / mrr / 60 if mrr else 0
+
+    op_results.append(
+        {
+            "Operation":        row["Operation"],
+            "Feed (mm/min)":    feed,
+            "MRR (mm³/min)":    mrr,
+            "Chip Volume (mm³)": chip_vol,
+            "Time (min)":       time_min,
+        }
+    )
+
+op_df = pd.DataFrame(op_results)
+
+# ————————————————————————————————————
+# 7) Zaman tablosu + grafik
+# ————————————————————————————————————
+st.subheader("Cycle Time Breakdown")
+st.dataframe(op_df, use_container_width=True)
+
+chart = (
+    alt.Chart(op_df)
+    .mark_bar()
+    .encode(x="Operation", y="Time (min)", tooltip=["Time (min)"])
+    .properties(height=300)
+)
+st.altair_chart(chart, use_container_width=True)
+
+# ————————————————————————————————————
+# 8) Maliyet hesapları
+# ————————————————————————————————————
+raw_mass       = V_raw * mat_density
+material_cost  = raw_mass * mat_price
+cut_time_hr    = op_df["Time (min)"].sum() / 60
+machine_cost   = cut_time_hr * machine_rate
+subtotal       = material_cost + machine_cost + tool_cost
+overhead       = subtotal * (overhead_pct / 100)
+total_cost     = subtotal + overhead
+
+cost_df = pd.DataFrame(
+    {
+        "Cost Component": ["Material", "Machine", "Tool wear", "Overhead"],
+        "Amount ($)":     [material_cost, machine_cost, tool_cost, overhead],
+    }
+)
+
+st.subheader("Cost Summary")
+st.dataframe(cost_df, use_container_width=True)
+st.markdown(f"### **Total Cost: ${total_cost:,.2f}**")
+
+# ————————————————————————————————————
+# 9) PDF çıktı
+# ————————————————————————————————————
 class PDF(FPDF):
     def header(self):
         self.set_font("Helvetica", "B", 14)
@@ -50,7 +175,12 @@ class PDF(FPDF):
         # Rows
         for _, row in dataframe.iterrows():
             for item in row:
-                self.cell(col_width, 6, str(round(item, 3) if isinstance(item, (int, float)) else str(item)), border=1, align="C")
+                text = (
+                    f"{item:,.3f}"
+                    if isinstance(item, (int, float))
+                    else str(item)
+                )
+                self.cell(col_width, 6, text, border=1, align="C")
             self.ln()
         self.ln(4)
 
@@ -58,7 +188,6 @@ def build_pdf(block_dims, op_df, cost_summary):
     pdf = PDF()
     pdf.add_page()
 
-    # Block dimensions summary
     pdf.set_font("Helvetica", "B", 11)
     pdf.cell(0, 8, "Block & Volume", new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", size=9)
@@ -66,112 +195,13 @@ def build_pdf(block_dims, op_df, cost_summary):
         pdf.cell(0, 6, f"{key}: {val}", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(4)
 
-    # Operation table
     pdf.add_table(op_df, "Operation Breakdown")
-
-    # Cost
     pdf.add_table(cost_summary, "Cost Summary")
 
     buffer = BytesIO()
     pdf.output(buffer)
     return buffer.getvalue()
 
-# -----------------------------------------------------
-# Sidebar – raw block + cost inputs
-# -----------------------------------------------------
-with st.sidebar:
-    st.header("Raw Block Dimensions (mm)")
-    L = st.number_input("Length (X)", value=200, min_value=1)
-    W = st.number_input("Width (Y)", value=150, min_value=1)
-    H = st.number_input("Height (Z)", value=40, min_value=1)
-    st.divider()
-    st.header("Final Part & Costs")
-    V_final = st.number_input("Final part volume (mm³)", value=680000)
-    machine_rate = st.number_input("Machine rate ($/hr)", value=75.0)
-    tool_cost = st.number_input("Tool wear cost per part ($)", value=8.0)
-    mat_density = st.number_input("Material density (kg/mm³)", value=2.70e-6, format="%e")
-    mat_price = st.number_input("Material cost ($/kg)", value=5.0)
-    overhead_pct = st.number_input("Overhead (%)", value=15.0)
-
-# -----------------------------------------------------
-# Volume calculations
-# -----------------------------------------------------
-V_raw = L * W * H
-V_chip = V_raw - V_final if V_raw > V_final else 0
-
-# -----------------------------------------------------
-# Operations table (editable)
-# -----------------------------------------------------
-def default_operations():
-    return pd.DataFrame({
-        "Operation": ["Rough 3X", "Semi‑rough 5X", "Finish"],
-        "Tool Ø (mm)": [12, 8, 6],
-        "Teeth": [3, 2, 2],
-        "RPM": [12000, 16000, 18000],
-        "f_z (mm)": [0.06, 0.04, 0.03],
-        "a_p (mm)": [8, 6, 0.5],
-        "a_e (mm)": [4, 2, 0.2],
-        "Volume Share": [0.70, 0.25, 0.05]
-    })
-
-if "op_df" not in st.session_state:
-    st.session_state.op_df = default_operations()
-
-st.subheader("Operation Parameters")
-edited_df = st.data_editor(st.session_state.op_df, num_rows="dynamic", use_container_width=True, key="ops_editor")
-st.session_state.op_df = edited_df
-
-# -----------------------------------------------------
-# Calculations per operation
-# -----------------------------------------------------
-op_results = []
-for _, row in edited_df.iterrows():
-    feed = row["Teeth"] * row["RPM"] * row["f_z (mm)"]
-    mrr = feed * row["a_p (mm)"] * row["a_e (mm)"]
-    chip_vol = V_chip * row["Volume Share"]
-    time_min = chip_vol / mrr / 60 if mrr else 0
-    op_results.append({
-        "Operation": row["Operation"],
-        "Feed (mm/min)": feed,
-        "MRR (mm³/min)": mrr,
-        "Chip Volume (mm³)": chip_vol,
-        "Time (min)": time_min
-    })
-
-op_df = pd.DataFrame(op_results)
-
-st.subheader("Cycle Time Breakdown")
-st.dataframe(op_df, use_container_width=True)
-
-# Bar chart
-chart = alt.Chart(op_df).mark_bar().encode(
-    x="Operation",
-    y="Time (min)",
-    tooltip=["Time (min)"]
-).properties(height=300)
-st.altair_chart(chart, use_container_width=True)
-
-# -----------------------------------------------------
-# Cost calculations
-# -----------------------------------------------------
-raw_mass = V_raw * mat_density
-material_cost = raw_mass * mat_price
-cut_time_hr = op_df["Time (min)"].sum() / 60
-machine_cost = cut_time_hr * machine_rate
-subtotal = material_cost + machine_cost + tool_cost
-overhead = subtotal * (overhead_pct / 100)
-
-total_cost = subtotal + overhead
-cost_df = pd.DataFrame({"Cost Component": ["Material", "Machine", "Tool wear", "Overhead"],
-                       "Amount ($)": [material_cost, machine_cost, tool_cost, overhead]})
-
-st.subheader("Cost Summary")
-st.dataframe(cost_df, use_container_width=True)
-st.markdown(f"**Total Cost: ${total_cost:,.2f}**")
-
-# -----------------------------------------------------
-# PDF Export
-# -----------------------------------------------------
 if st.button("Generate PDF Quote"):
     block_info = {
         "Block L×W×H (mm)": f"{L} × {W} × {H}",
@@ -179,7 +209,12 @@ if st.button("Generate PDF Quote"):
         "Final Volume (mm³)": f"{V_final:,.0f}",
         "Chip Volume (mm³)": f"{V_chip:,.0f}",
         "Total Cycle Time (min)": f"{op_df['Time (min)'].sum():.2f}",
-        "Total Cost ($)": f"{total_cost:,.2f}"
+        "Total Cost ($)": f"{total_cost:,.2f}",
     }
     pdf_bytes = build_pdf(block_info, op_df, cost_df)
-    st.download_button("Download PDF", data=pdf_bytes, file_name="machining_quote.pdf", mime="application/pdf")
+    st.download_button(
+        "Download PDF",
+        data=pdf_bytes,
+        file_name="machining_quote.pdf",
+        mime="application/pdf",
+    )
