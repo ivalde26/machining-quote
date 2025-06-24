@@ -143,7 +143,7 @@ setup_cost = (setup_time_min / 60) * setup_labor_rate    # $
 material_cost  = raw_mass * mat_price
 cut_time_hr    = op_df["Time (min)"].sum() / 60
 machine_cost   = cut_time_hr * machine_rate
-subtotal       = material_cost + machine_cost + tool_cost
+subtotal = material_cost + machine_cost + tool_cost + setup_cost
 overhead       = subtotal * (overhead_pct / 100)
 total_cost     = subtotal + overhead
 
