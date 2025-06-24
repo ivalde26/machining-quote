@@ -30,11 +30,11 @@ with st.sidebar:
 
     st.divider()
     st.header("Final Part & Costs")
-    V_final      = st.number_input("Final part volume (mm³)", value=680_000)
-    machine_rate = st.number_input("Machine rate ($/hr)",      value=75.0)
-    tool_cost    = st.number_input("Tool wear cost per part ($)", value=8.0)
+    V_final      = st.number_input("Final part volume (mm³)", value=0)
+    machine_rate = st.number_input("Machine rate ($/hr)",      value=60)
+    tool_cost    = st.number_input("Tool wear cost per part ($)", value=1.0)
     mat_density  = st.number_input("Material density (kg/mm³)", value=rho_default, format="%e")
-    mat_price    = st.number_input("Material cost ($/kg)",     value=5.0)
+    mat_price    = st.number_input("Material cost ($/kg)",     value=0.0)
     overhead_pct = st.number_input("Overhead (%)",             value=15.0)
 
 # ————————————————————————————————————
@@ -146,6 +146,24 @@ cost_df = pd.DataFrame(
         "Amount ($)":     [material_cost, machine_cost, tool_cost, overhead],
     }
 )
+# ------------------------------------------------------------------
+# 📏 Block & Volume – ekrana bilgi satırları
+#  (Cost Summary'den HEMEN ÖNCE koy)
+# ------------------------------------------------------------------
+st.subheader("📏 Block & Volume")
+
+st.write(f"**Raw block volume:** `{V_raw:,.0f} mm³`")
+st.write(f"**Raw material weight:** `{raw_mass:.2f} kg`")
+
+chip_text = (
+    f"**Chip volume to remove:** `{V_chip:,.0f} mm³`"
+    if V_chip > 0 else "**Chip volume:** 0 mm³"
+)
+st.write(chip_text)
+
+st.divider()        # İsteğe bağlı: Cost Summary'den görsel ayraç
+
+
 
 st.subheader("Cost Summary")
 st.dataframe(cost_df, use_container_width=True)
