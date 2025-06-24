@@ -27,6 +27,22 @@ with st.sidebar:
     L = st.number_input("Length (X)",  value=200, min_value=1)
     W = st.number_input("Width  (Y)",  value=150, min_value=1)
     H = st.number_input("Height (Z)",  value=40,  min_value=1)
+# ------------------------------------------------------------------
+# 📏 Block & Volume – ekrana bilgi satırları
+#  (Cost Summary'den HEMEN ÖNCE koy)
+# ------------------------------------------------------------------
+st.subheader("📏 Block & Volume")
+
+st.write(f"**Raw material weight:** `{raw_mass:.2f} kg`")
+st.write(f"**Raw block volume:** `{V_raw:,.0f} mm³`")
+
+chip_text = (
+    f"**Chip volume to remove:** `{V_chip:,.0f} mm³`"
+    if V_chip > 0 else "**Chip volume:** 0 mm³"
+)
+st.write(chip_text)
+
+st.divider()        # İsteğe bağlı: Cost Summary'den görsel ayraç
 
     st.divider()
     st.header("Final Part & Costs")
@@ -146,22 +162,7 @@ cost_df = pd.DataFrame(
         "Amount ($)":     [material_cost, machine_cost, tool_cost, overhead],
     }
 )
-# ------------------------------------------------------------------
-# 📏 Block & Volume – ekrana bilgi satırları
-#  (Cost Summary'den HEMEN ÖNCE koy)
-# ------------------------------------------------------------------
-st.subheader("📏 Block & Volume")
 
-st.write(f"**Raw material weight:** `{raw_mass:.2f} kg`")
-st.write(f"**Raw block volume:** `{V_raw:,.0f} mm³`")
-
-chip_text = (
-    f"**Chip volume to remove:** `{V_chip:,.0f} mm³`"
-    if V_chip > 0 else "**Chip volume:** 0 mm³"
-)
-st.write(chip_text)
-
-st.divider()        # İsteğe bağlı: Cost Summary'den görsel ayraç
 
 
 
