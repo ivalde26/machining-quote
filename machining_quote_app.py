@@ -40,7 +40,7 @@ with st.sidebar:
    # --- Setup bilgileri (aynı blokta) ---
     st.header("Setup")
     setup_time_min   = st.number_input("Setup time (min)",  value=60)
-    setup_labor_rate = st.number_input("Labor rate ($/hr)", value=20.0)ate = st.number_input("Labor rate ($/hr)", value=40.0)
+    setup_labor_rate = st.number_input("Labor rate ($/hr)", value=40.0)
 
 # ————————————————————————————————————
 # 2) Sayfa başlığı
