@@ -112,24 +112,22 @@ op_df_edit = st.data_editor(
 st.session_state.op_df = op_df_edit
 
 # --------------------------------------------------------
-# 5) PER-OP CALCULATIONS
+# 5) PER-OP CALCULATIONS  (tek seferde güncel okuma)
 # --------------------------------------------------------
+op_df_current = st.session_state.op_df.copy()   # <-- yeni
+
 op_results = []
-for _, row in op_df_edit.iterrows():
-    # feed (otomatik vs manuel)
+for _, row in op_df_current.iterrows():         # op_df_edit değil!
     feed = (row["Teeth"] * row["RPM"] * row["f_z (mm)"]
             if feed_mode.startswith("Calculate") else row["Feed (mm/min)"])
 
-    # aₑ (takım Ø’nin %-si vs manuel mm)
     ae = (row["Tool Ø (mm)"] * row["ae % (of Ø)"] / 100
           if ae_mode.startswith("Use %") else row["a_e (mm)"])
 
-    # MRR ve süre
-    mrr      = feed * row["a_p (mm)"] * ae            # mm³/min
+    mrr      = feed * row["a_p (mm)"] * ae
     chip_vol = V_chip * row["Volume Share"]
     time_min = chip_vol / mrr / 60 if mrr else 0
 
-    # sonuç listesi
     op_results.append({
         "Operation":         row["Operation"],
         "Feed (mm/min)":     feed,
@@ -138,6 +136,7 @@ for _, row in op_df_edit.iterrows():
         "Chip Volume (mm³)": chip_vol,
         "Time (min)":        time_min,
     })
+
 
 
 
