@@ -24,18 +24,18 @@ with st.sidebar:
     Kc_default  = float(mat_row["Kc_N_mm2"])        # şimdilik dokunmuyoruz
 
     st.header("Raw Block Dimensions (mm)")
-    L = st.number_input("Length (X)",  value=200, min_value=1)
-    W = st.number_input("Width  (Y)",  value=150, min_value=1)
-    H = st.number_input("Height (Z)",  value=40,  min_value=1)
+    L = st.number_input("Length (X)",  value=, min_value=1)
+    W = st.number_input("Width  (Y)",  value=, min_value=1)
+    H = st.number_input("Height (Z)",  value=,  min_value=1)
 
     st.divider()
     st.header("Final Part & Costs")
-    V_final      = st.number_input("Final part volume (mm³)", value=680_000)
-    machine_rate = st.number_input("Machine rate ($/hr)",      value=75.0)
-    tool_cost    = st.number_input("Tool wear cost per part ($)", value=8.0)
+    V_final      = st.number_input("Final part volume (mm³)", value=0)
+    machine_rate = st.number_input("Machine rate ($/hr)",      value=0)
+    tool_cost    = st.number_input("Tool wear cost per part ($)", value=0)
     mat_density  = st.number_input("Material density (kg/mm³)", value=rho_default, format="%e")
-    mat_price    = st.number_input("Material cost ($/kg)",     value=5.0)
-    overhead_pct = st.number_input("Overhead (%)",             value=15.0)
+    mat_price    = st.number_input("Material cost ($/kg)",     value=0)
+    overhead_pct = st.number_input("Overhead (%)",             value=0)
 
 # ————————————————————————————————————
 # 2) Sayfa başlığı
@@ -55,9 +55,9 @@ def default_operations():
     return pd.DataFrame(
         {
             "Operation":      ["Rough 3X", "Semi-rough 5X", "Finish"],
-            "Tool Ø (mm)":    [12, 8, 6],
-            "Teeth":          [3,  2, 2],
-            "RPM":            [12000, 16000, 18000],
+            "Tool Ø (mm)":    [0, 0, 0],
+            "Teeth":          [3,  3, 3],
+            "RPM":            [13000, 13000, 13000],
             "f_z (mm)":       [0.06, 0.04, 0.03],
             "Feed (mm/min)":  [0, 0, 0],            # manuel değer için
             "a_p (mm)":       [8, 6, 0.5],
@@ -210,6 +210,17 @@ if st.button("Generate PDF Quote"):
         "Chip Volume (mm³)": f"{V_chip:,.0f}",
         "Total Cycle Time (min)": f"{op_df['Time (min)'].sum():.2f}",
         "Total Cost ($)": f"{total_cost:,.2f}",
+        # ------------------------------------------------------------------
+# ✨ Blok & Hacim Bilgileri (ekrana yazdır)
+# ------------------------------------------------------------------
+st.subheader("📏 Block & Volume")
+
+st.write(f"**Raw block volume:** `{V_raw:,.0f} mm³`")
+st.write(f"**Raw material weight:** `{raw_mass:.2f} kg`")
+
+chip_txt = f"**Chip volume to remove:** `{V_chip:,.0f} mm³`"
+st.write(chip_txt if V_chip > 0 else "Chip volume: 0 (mm³)")
+
     }
     pdf_bytes = build_pdf(block_info, op_df, cost_df)
     st.download_button(
@@ -218,3 +229,14 @@ if st.button("Generate PDF Quote"):
         file_name="machining_quote.pdf",
         mime="application/pdf",
     )
+def normalize(txt: str) -> str:
+    return str(txt).replace("\u2011", "-").replace("\u2013", "-").replace("\u2014", "-")
+
+def add_table(self, dataframe: pd.DataFrame, title: str):
+    ...
+    for _, row in dataframe.iterrows():
+        for item in row:
+            text = (
+                f"{item:,.3f}" if isinstance(item, (int, float)) else normalize(item)
+            )
+            self.cell(col_width, 6, text, border=1, align="C")
