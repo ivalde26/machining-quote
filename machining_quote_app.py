@@ -146,6 +146,10 @@ machine_cost   = cut_time_hr * machine_rate
 subtotal = material_cost + machine_cost + tool_cost + setup_cost
 overhead       = subtotal * (overhead_pct / 100)
 total_cost     = subtotal + overhead
+cost_df = pd.DataFrame({
+    "Cost Component": ["Material", "Machine", "Tool wear", "Setup labor", "Overhead"],
+    "Amount ($)":     [material_cost, machine_cost, tool_cost, setup_cost, overhead],
+})
 
 cost_df = pd.DataFrame(
     {
