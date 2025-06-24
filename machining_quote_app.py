@@ -211,7 +211,6 @@ if st.button("Generate PDF Quote"):
         "Total Cycle Time (min)": f"{op_df['Time (min)'].sum():.2f}",
         "Total Cost ($)": f"{total_cost:,.2f}",
         # ------------------------------------------------------------------
-
         def normalize(txt: str) -> str:
     return str(txt).replace("\u2011", "-").replace("\u2013", "-").replace("\u2014", "-")
 
