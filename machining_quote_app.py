@@ -215,4 +215,31 @@ def build_pdf() -> bytes:
 
     pdf.cell(0, 8, "Block & Volume", new_x="LMARGIN", new_y="NEXT")
     blk = {
-        "L×W×H (mm)": f"{L} × {W} × {
+        "L×W×H (mm)": f"{L} × {W} × {H}",
+        "Raw Volume (mm³)":   f"{V_raw:,.0f}",
+        "Final Volume (mm³)": f"{V_final:,.0f}",
+        "Chip Volume (mm³)":  f"{V_chip:,.0f}",
+        "Total Cycle Time (min)": f"{total_time_min:.2f}",
+        "Total Cost ($)":         f"{total_cost:,.2f}",
+    }
+    for k, v in blk.items():
+        pdf.cell(0, 6, f"{k}: {v}", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(2)
+
+    # Operation & cost tabloları
+    pdf.add_table(op_df[["Operation", "aₑ (mm)", "Time (min)"]], "Operation Breakdown")
+    pdf.add_table(cost_df, "Cost Summary")
+
+    buffer = BytesIO()
+    pdf.output(buffer)
+    return buffer.getvalue()
+
+# ——— PDF butonu
+if st.button("Generate PDF Quote"):
+    st.download_button(
+        "Download PDF",
+        data=build_pdf(),
+        file_name="machining_quote.pdf",
+        mime="application/pdf",
+    )
+
