@@ -24,9 +24,9 @@ with st.sidebar:
     Kc_default  = float(mat_row["Kc_N_mm2"])        # şimdilik dokunmuyoruz
 
     st.header("Raw Block Dimensions (mm)")
-    L = st.number_input("Length (X)",  value=, min_value=1)
-    W = st.number_input("Width  (Y)",  value=, min_value=1)
-    H = st.number_input("Height (Z)",  value=,  min_value=1)
+    L = st.number_input("Length (X)",  value=0, min_value=1)
+    W = st.number_input("Width  (Y)",  value=0, min_value=1)
+    H = st.number_input("Height (Z)",  value=0,  min_value=1)
 
     st.divider()
     st.header("Final Part & Costs")
