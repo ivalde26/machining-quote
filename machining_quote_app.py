@@ -105,7 +105,6 @@ op_df_edit = st.data_editor(
     num_rows="dynamic",
     use_container_width=True,
     key="ops_editor",
-    on_change=st.experimental_rerun,   # ← otomatik yenile
 )
 st.session_state.op_df = op_df_edit
 
