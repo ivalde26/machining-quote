@@ -140,7 +140,6 @@ for _, row in op_df_edit.iterrows():
     })
 
 
-    })
 
 op_df = pd.DataFrame(op_results)
 
