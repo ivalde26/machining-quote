@@ -1,46 +1,68 @@
+# --------------------------------------------------------
+# 0) TEMEL AYARLAR  (imports, sayfa config, başlık)
+# --------------------------------------------------------
 import streamlit as st
 import pandas as pd
-import altair as alt
-from io import BytesIO
-from fpdf import FPDF
-from pathlib import Path
+...
 
-# ————————————————————————————————————
-# 0) Dosya & malzeme verisi
-# ————————————————————————————————————
-base_dir = Path(__file__).parent
-MATS = pd.read_csv(base_dir / "data" / "materials.csv")
-mat_ids = MATS["Material-ID"].tolist()
+st.set_page_config(page_title="🛠️ Machining Quote Calculator",
+                   layout="wide")
 
-# ————————————————————————————————————
-# 1) Yan menü – malzeme ve blok girişleri
-# ————————————————————————————————————
-st.set_page_config(page_title="🛠️ Machining Quote Calculator", layout="wide")
+# Orta alana büyük başlık (sol kenar boşluk yok)
+st.markdown(
+    "<h1 style='text-align:center;'>🛠️ Machining Quote Calculator</h1>",
+    unsafe_allow_html=True
+)
+
+# --------------------------------------------------------
+# 1) SIDEBAR BLOĞU
+# --------------------------------------------------------
 with st.sidebar:
+    # Material --------------------------------------------------
     st.subheader("Material")
-    sel_mat = st.selectbox("Choose material", mat_ids, index=mat_ids.index("AL6061"))
+    sel_mat = st.selectbox("Choose material", mat_ids,
+                           index=mat_ids.index("AL6061"))
     mat_row = MATS[MATS["Material-ID"] == sel_mat].iloc[0]
-    rho_default = float(mat_row["rho_kg_mm3"])      # kg / mm³
-    Kc_default  = float(mat_row["Kc_N_mm2"])        # şimdilik dokunmuyoruz
+    rho_default = float(mat_row["rho_kg_mm3"])
+    Kc_default  = float(mat_row["Kc_N_mm2"])   # şimdilik dokunmuyoruz
 
+    # Raw block -----------------------------------------------
     st.header("Raw Block Dimensions (mm)")
     L = st.number_input("Length (X)",  value=200, min_value=1)
     W = st.number_input("Width  (Y)",  value=150, min_value=1)
     H = st.number_input("Height (Z)",  value=40,  min_value=1)
 
+    # Block & Volume (özet) ------------------------------------
+    st.markdown("### Block & Volume")
+    st.write(f"Raw block volume: `{V_raw:,.0f} mm³`")
+    st.write(f"Raw material weight: `{raw_mass:.2f} kg`")
+    chip_txt = (f"Chip volume to remove: `{V_chip:,.0f} mm³`"
+                if V_chip > 0 else "Chip volume: 0 mm³")
+    st.write(chip_txt)
+
     st.divider()
+
+    # Final Part & Costs ---------------------------------------
     st.header("Final Part & Costs")
     V_final      = st.number_input("Final part volume (mm³)", value=0)
     machine_rate = st.number_input("Machine rate ($/hr)",      value=60)
     tool_cost    = st.number_input("Tool wear cost per part ($)", value=1.0)
-    mat_density  = st.number_input("Material density (kg/mm³)", value=rho_default, format="%e")
-    mat_price    = st.number_input("Material cost ($/kg)",     value=0.0)
-    overhead_pct = st.number_input("Overhead (%)",             value=15.0)
+    mat_density  = st.number_input("Material density (kg/mm³)",
+                                   value=rho_default, format="%e")
+    mat_price    = st.number_input("Material cost ($/kg)", value=0.0)
+    overhead_pct = st.number_input("Overhead (%)",         value=15.0)
 
-   # --- Setup bilgileri (aynı blokta) ---
+    # Setup ----------------------------------------------------
     st.header("Setup")
     setup_time_min   = st.number_input("Setup time (min)",  value=60)
     setup_labor_rate = st.number_input("Labor rate ($/hr)", value=40.0)
+
+# --------------------------------------------------------
+# 2) SAYFANIN ORTA ALANINDAKİ İÇERİK
+# --------------------------------------------------------
+# (Cycle Time tablosu, grafik, Cost Summary vb. her şey burada
+#  sidebar bloğunun Dışında, girintisiz olarak devam eder)
+
 
 # ————————————————————————————————————
 # 2) Sayfa başlığı
