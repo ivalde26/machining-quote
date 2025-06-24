@@ -137,48 +137,51 @@ st.altair_chart(chart, use_container_width=True)
 # ————————————————————————————————————
 # 8) Maliyet hesapları
 # ————————————————————————————————————
-raw_mass       = V_raw * mat_density
-# --- Setup labor cost ---
-setup_cost = (setup_time_min / 60) * setup_labor_rate    # $
-material_cost  = raw_mass * mat_price
-cut_time_hr    = op_df["Time (min)"].sum() / 60
-machine_cost   = cut_time_hr * machine_rate
-subtotal = material_cost + machine_cost + tool_cost + setup_cost
+raw_mass       = V_raw * mat_density                     # kg
+material_cost  = raw_mass * mat_price                    # $
+
+mach_time_min  = op_df["Time (min)"].sum()               # dakika
+machine_cost   = (mach_time_min / 60) * machine_rate     # $
+
+# Setup işçilik maliyeti
+setup_cost     = (setup_time_min / 60) * setup_labor_rate  # $
+
+subtotal       = material_cost + machine_cost + tool_cost + setup_cost
 overhead       = subtotal * (overhead_pct / 100)
 total_cost     = subtotal + overhead
+
 cost_df = pd.DataFrame({
-    "Cost Component": ["Material", "Machine", "Tool wear", "Setup labor", "Overhead"],
-    "Amount ($)":     [material_cost, machine_cost, tool_cost, setup_cost, overhead],
+    "Cost Component": ["Material",
+                       "Machine",
+                       "Tool wear",
+                       "Setup labor",
+                       "Overhead"],
+    "Amount ($)":     [material_cost,
+                       machine_cost,
+                       tool_cost,
+                       setup_cost,
+                       overhead],
 })
 
-cost_df = pd.DataFrame(
-    {
-        "Cost Component": ["Material", "Machine", "Tool wear", "Overhead"],
-        "Amount ($)":     [material_cost, machine_cost, tool_cost, overhead],
-    }
-)
 # ------------------------------------------------------------------
 # 📏 Block & Volume – ekrana bilgi satırları
-#  (Cost Summary'den HEMEN ÖNCE koy)
 # ------------------------------------------------------------------
 st.subheader("📏 Block & Volume")
 
-st.write(f"**Raw material weight:** `{raw_mass:.2f} kg`")
 st.write(f"**Raw block volume:** `{V_raw:,.0f} mm³`")
-
-chip_text = (
-    f"**Chip volume to remove:** `{V_chip:,.0f} mm³`"
-    if V_chip > 0 else "**Chip volume:** 0 mm³"
-)
+st.write(f"**Raw material weight:** `{raw_mass:.2f} kg`")
+chip_text = (f"**Chip volume to remove:** `{V_chip:,.0f} mm³`"
+             if V_chip > 0 else "**Chip volume:** 0 mm³")
 st.write(chip_text)
+st.divider()
 
-st.divider()        # İsteğe bağlı: Cost Summary'den görsel ayraç
-
-
-
+# ------------------------------------------------------------------
+# 💰 Cost Summary (tablo + toplam)
+# ------------------------------------------------------------------
 st.subheader("Cost Summary")
 st.dataframe(cost_df, use_container_width=True)
 st.markdown(f"### **Total Cost: ${total_cost:,.2f}**")
+
 
 # ————————————————————————————————————
 # 9) PDF çıktı
