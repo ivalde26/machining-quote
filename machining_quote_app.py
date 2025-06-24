@@ -37,6 +37,12 @@ with st.sidebar:
     mat_price    = st.number_input("Material cost ($/kg)",     value=0.0)
     overhead_pct = st.number_input("Overhead (%)",             value=15.0)
 
+# --- Setup bilgileri ---
+st.header("Setup")
+setup_time_min   = st.number_input("Setup time (min)",  value=30)
+setup_labor_rate = st.number_input("Labor rate ($/hr)", value=40.0)
+
+
 # ————————————————————————————————————
 # 2) Sayfa başlığı
 # ————————————————————————————————————
