@@ -138,6 +138,8 @@ st.altair_chart(chart, use_container_width=True)
 # 8) Maliyet hesapları
 # ————————————————————————————————————
 raw_mass       = V_raw * mat_density
+# --- Setup labor cost ---
+setup_cost = (setup_time_min / 60) * setup_labor_rate    # $
 material_cost  = raw_mass * mat_price
 cut_time_hr    = op_df["Time (min)"].sum() / 60
 machine_cost   = cut_time_hr * machine_rate
