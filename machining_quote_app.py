@@ -55,13 +55,13 @@ def default_operations():
     return pd.DataFrame(
         {
             "Operation":      ["Rough 3X", "Semi-rough 5X", "Finish"],
-            "Tool Ø (mm)":    [12, 8, 6],
-            "Teeth":          [3,  2, 2],
-            "RPM":            [12000, 16000, 18000],
+            "Tool Ø (mm)":    [0, 0, 0],
+            "Teeth":          [3,  3, 3],
+            "RPM":            [12000, 12000, 12000],
             "f_z (mm)":       [0.06, 0.04, 0.03],
             "Feed (mm/min)":  [0, 0, 0],            # manuel değer için
-            "a_p (mm)":       [8, 6, 0.5],
-            "a_e (mm)":       [4, 2, 0.2],
+            "a_p (mm)":       [0, 0, 0],
+            "a_e (mm)":       [0, 0, 0],
             "Volume Share":   [0.70, 0.25, 0.05],
         }
     )
