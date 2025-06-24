@@ -211,6 +211,18 @@ if st.button("Generate PDF Quote"):
         "Total Cycle Time (min)": f"{op_df['Time (min)'].sum():.2f}",
         "Total Cost ($)": f"{total_cost:,.2f}",
         # ------------------------------------------------------------------
+
+        def normalize(txt: str) -> str:
+    return str(txt).replace("\u2011", "-").replace("\u2013", "-").replace("\u2014", "-")
+
+def add_table(self, dataframe: pd.DataFrame, title: str):
+    ...
+    for _, row in dataframe.iterrows():
+        for item in row:
+            text = (
+                f"{item:,.3f}" if isinstance(item, (int, float)) else normalize(item)
+            )
+            self.cell(col_width, 6, text, border=1, align="C")
 # ✨ Blok & Hacim Bilgileri (ekrana yazdır)
 # ------------------------------------------------------------------
 st.subheader("📏 Block & Volume")
@@ -229,14 +241,4 @@ st.write(chip_txt if V_chip > 0 else "Chip volume: 0 (mm³)")
         file_name="machining_quote.pdf",
         mime="application/pdf",
     )
-def normalize(txt: str) -> str:
-    return str(txt).replace("\u2011", "-").replace("\u2013", "-").replace("\u2014", "-")
 
-def add_table(self, dataframe: pd.DataFrame, title: str):
-    ...
-    for _, row in dataframe.iterrows():
-        for item in row:
-            text = (
-                f"{item:,.3f}" if isinstance(item, (int, float)) else normalize(item)
-            )
-            self.cell(col_width, 6, text, border=1, align="C")
